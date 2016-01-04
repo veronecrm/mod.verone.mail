@@ -1,7 +1,7 @@
 /**
  * Verone CRM | http://www.veronecrm.com
  *
- * @copyright  Copyright (C) 2015 Adam Banaszkiewicz
+ * @copyright  Copyright (C) 2015 - 2016 Adam Banaszkiewicz
  * @license    GNU General Public License version 3; see license.txt
  */
 
@@ -24,7 +24,13 @@ Mail.App.Message.Manager = function(app) {
      * Initiation function
      */
     this.init = function() {
-        
+        var self = this;
+
+        this.app.bind('onAccountsListEmpty', function() {
+            self.app.layout.segment('preview')
+                .hideLoader()
+                .coverPreview();
+        });
     };
 
     this.getCurrentMessage = function() {
@@ -71,20 +77,7 @@ Mail.App.Message.Manager = function(app) {
                 'mailbox': self.app.getManager('account').mailbox.id,
                 'msgno': id,
                 'markAsSeen': 'yes'
-            }, function(msg) {
-                try {
-                    var result = jQuery.parseJSON(msg);
-                }
-                catch(e) {
-                    self.app.generateTimeoutedErrorWithCallback('mamm-preview', APP.t('mailErrorWhenTryingGetMessageTryingAgain'), 5, function() {
-                        self.preview(id);
-                    });
-
-                    console.log(['this.preview', e]);
-                    return false;
-                }
-                console.log(result);
-
+            }, function(result) {
                 var message           = new Mail.App.Message.Incomming();
                 message.id            = result.data.id;
                 message.subject       = result.data.subject;
@@ -203,15 +196,7 @@ Mail.App.Message.Manager = function(app) {
 
         wnd.showLoader();
 
-        this.app.api.call('send', message, function(msg) {
-            try {
-                var result = jQuery.parseJSON(msg);
-            }
-            catch(e) {
-                APP.FluidNotification.open('Serwer zwrócił błędne dane.', { theme: 'error' });
-                wnd.hideLoader();
-            }
-
+        this.app.api.call('send', message, function(result) {
             if(result.status == 'success')
             {
                 APP.FluidNotification.open(result.message, { theme: 'success' });

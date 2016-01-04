@@ -1,7 +1,7 @@
 /**
  * Verone CRM | http://www.veronecrm.com
  *
- * @copyright  Copyright (C) 2015 Adam Banaszkiewicz
+ * @copyright  Copyright (C) 2015 - 2016 Adam Banaszkiewicz
  * @license    GNU General Public License version 3; see license.txt
  */
 
@@ -124,6 +124,8 @@ Mail.Layout.Segment.Preview = function(node, layout) {
         doc.open();
         doc.write('<!doctype html>' + '<html><head>' + '<title>' + message.subject + '</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=IE7"><link rel="stylesheet" href="' + APP.filePath('/modules/Mail/bootstrap/bootstrap.min.css') + '"><meta charset="utf-8" /><style>body{font-size:12px;padding:10px;}blockquote{font-size:12px;padding-right:0px;}</style></head><body>' + message.getContent() + '</body></html>');
         doc.close();
+
+        return this;
     };
 
     this.updateRelated = function(list) {
@@ -163,38 +165,48 @@ Mail.Layout.Segment.Preview = function(node, layout) {
 
             this.node.find('.mail-related-contacts').append(listItem);
         }
+
+        return this;
     };
 
     /**
      * Checks current height of message header, and updates view sizes.
      * 
-     * @return void
+     * @return self
      */
     this.updateSizes = function() {
         this.layout.segment('preview-body').getNode().css('top', this.layout.segment('preview-head').getHeight());
+
+        return this;
     };
 
     /**
      * Shows loader that covers all acounts and view
      * information text for user to wait.
      *
-     * @return void
+     * @return self
      */
     this.showLoader = function() {
         this.node.find('.info-layer.type-loading').show();
+
+        return this;
     };
 
     /**
      * Hides loader.
      *
-     * @return void
+     * @return self
      */
     this.hideLoader = function() {
         this.node.find('.info-layer.type-loading').hide();
+
+        return this;
     };
 
     this.preventSelectMessageShow = function() {
         this.selectMessagePrevented = true;
+
+        return this;
     };
 
     this.showSelectMessage = function() {
@@ -202,9 +214,25 @@ Mail.Layout.Segment.Preview = function(node, layout) {
             this.selectMessagePrevented = false;
         else
             this.node.find('.info-layer.type-select').show();
+
+        return this;
     };
 
     this.hideSelectMessage = function() {
         this.node.find('.info-layer.type-select').hide();
+
+        return this;
+    };
+
+    this.coverPreview = function() {
+        this.node.find('.info-layer.type-empty').show();
+
+        return this;
+    };
+
+    this.uncoverPreview = function() {
+        this.node.find('.info-layer.type-empty').hide();
+
+        return this;
     };
 };

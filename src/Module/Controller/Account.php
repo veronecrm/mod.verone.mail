@@ -2,7 +2,7 @@
 /**
  * Verone CRM | http://www.veronecrm.com
  *
- * @copyright  Copyright (C) 2015 Adam Banaszkiewicz
+ * @copyright  Copyright (C) 2015 - 2016 Adam Banaszkiewicz
  * @license    GNU General Public License version 3; see license.txt
  */
 
@@ -28,6 +28,14 @@ class Account extends BaseController
     {
         $account = $this->entity('Account')->fillFromRequest($request);
         $account->setOwner($this->user()->getId());
+
+        if($account->getSavePassword() == 0)
+        {
+            $account->setImapPassword('');
+            $account->setSmtpPassword('');
+        }
+
+        $this->repo('Account')->encryptPasswords($account);
         $this->repo('Account')->save($account);
 
         $this->flash('success', $this->t('mailAccountSaved'));
@@ -52,6 +60,8 @@ class Account extends BaseController
             return $this->redirect('Mail', 'Account', 'index');
         }
 
+        $this->repo('Account')->decryptPasswords($account);
+
         return $this->render('form', [
             'account' => $account
         ]);
@@ -69,6 +79,13 @@ class Account extends BaseController
 
         $account->fillFromRequest($request);
 
+        if($account->getSavePassword() == 0)
+        {
+            $account->setImapPassword('');
+            $account->setSmtpPassword('');
+        }
+
+        $this->repo('Account')->encryptPasswords($account);
         $this->repo('Account')->save($account);
 
         $this->flash('success', $this->t('mailAccountSaved'));
@@ -81,5 +98,21 @@ class Account extends BaseController
         {
             return $this->redirect('Mail', 'Account', 'index');
         }
+    }
+
+    public function deleteAction($request)
+    {
+        $account = $this->repo('Account')->find($request->get('id'));
+
+        if(! $account)
+        {
+            $this->flash('danger', $this->t('mailAccountDoesntExists'));
+            return $this->redirect('Mail', 'Account', 'index');
+        }
+
+        $this->repo('Account')->delete($account);
+        $this->flash('success', $this->t('mailAccountDeleted'));
+
+        return $this->redirect('Mail', 'Account', 'index');
     }
 }

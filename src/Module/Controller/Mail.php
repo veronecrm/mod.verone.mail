@@ -2,7 +2,7 @@
 /**
  * Verone CRM | http://www.veronecrm.com
  *
- * @copyright  Copyright (C) 2015 Adam Banaszkiewicz
+ * @copyright  Copyright (C) 2015 - 2016 Adam Banaszkiewicz
  * @license    GNU General Public License version 3; see license.txt
  */
 
@@ -11,6 +11,7 @@ namespace App\Module\Mail\Controller;
 use DateTime;
 use System\Utils\ObjectToArrayConverter;
 use CRM\App\Controller\BaseController;
+use App\Module\Mail\ORM\SentMail;
 use App\Module\Mail\ORM\Account;
 use App\Module\Mail\ORM\Message;
 use App\Module\Mail\App\IMAP;
@@ -40,9 +41,12 @@ class Mail extends BaseController
                 'name' => $account->getName(),
                 'senderName'  => $account->getSenderName(),
                 'refreshTime' => $account->getRefreshTime(),
+                'needAskForPassword' => $account->getSavePassword() == 1 ? 0 : 1,
                 'editLink'    => $this->createUrl('Mail', 'Account', 'edit', [ 'id' => $account->getId() ])
             ];
         }
+
+        $_SESSION['mail']['account'] = [];
 
         return $this->render('', [
             'contractors' => $contractors,
@@ -76,10 +80,16 @@ class Mail extends BaseController
         }
         catch(\Exception $e)
         {
-            return $this->responseAJAX(['message' => $e->getMessage(), 'status' => 'error']);
+            return $this->responseAJAX([
+                'message' => $e->getMessage(),
+                'status'  => 'error'
+            ]);
         }
 
-        return $this->responseAJAX(['message' => 'Połączenie nawiązane.', 'status' => 'success']);
+        return $this->responseAJAX([
+            'message' => 'Połączenie nawiązane.',
+            'status'  => 'success'
+        ]);
     }
 
     public function getAccountsMailboxesAction($request)
@@ -97,6 +107,21 @@ class Mail extends BaseController
                 continue;
             }
 
+            $repo->decryptPasswords($account);
+
+            if($account->getSavePassword() == 0)
+            {
+                foreach((array) $request->get('passwords') as $data)
+                {
+                    if($data['id'] == $account->getId())
+                    {
+                        $account->setImapPassword($data['password']);
+                        $account->setSmtpPassword($data['password']);
+                        $_SESSION['mail']['account'][$data['id']] = $data['password'];
+                    }
+                }
+            }
+
             $imap = $this->imap($account);
 
             $return[] = [
@@ -111,7 +136,10 @@ class Mail extends BaseController
             ];
         }
 
-        return $this->responseAJAX(['data' => $return]);
+        return $this->responseAJAX([
+            'status' => 'success',
+            'data'   => $return
+        ]);
     }
 
     public function getMailListAction($request)
@@ -153,7 +181,8 @@ class Mail extends BaseController
         }
 
         return $this->responseAJAX([
-            'data' => [
+            'status' => 'success',
+            'data'   => [
                 'list'  => $result,
                 'total' => $total
             ]
@@ -164,6 +193,7 @@ class Mail extends BaseController
     {
         $result    = [];
         $mailboxes = (array) $request->request->get('mailboxes');
+        $repo      = $this->repo('Account');
 
         // Store IMAP connections, for cache. many mailboxes can be in one account, so
         // we don't want co connect to server for every each mailbox.
@@ -171,15 +201,18 @@ class Mail extends BaseController
 
         foreach($mailboxes as $mailbox)
         {
-            // If connection does not exists, we create new.
+            // If connection does not exists, we create new one.
             if(isset($connections[$mailbox['account']]) === false)
             {
-                $account = $this->repo('Account')->find($mailbox['account']);
+                $account = $repo->find($mailbox['account']);
 
                 if(! $account)
                 {
                     continue;
                 }
+
+                $repo->decryptPasswords($account);
+                $this->completeAccountWithPassword($account);
 
                 $connections[$mailbox['account']] = $this->imap($account);
             }
@@ -194,7 +227,8 @@ class Mail extends BaseController
         }
 
         return $this->responseAJAX([
-            'data' => $result
+            'status' => 'success',
+            'data'   => $result
         ]);
     }
 
@@ -242,10 +276,20 @@ class Mail extends BaseController
                 $box->deleteMessage($id);
             }
 
-            return $this->responseAJAX([ 'msgsno' => $request->get('msgsno') ]);
+            return $this->responseAJAX([
+                'status' => 'success',
+                'data'   => [
+                    'msgsno' => $request->get('msgsno')
+                ]
+            ]);
         }
 
-        return $this->responseAJAX([ 'msgsno' => [] ]);
+        return $this->responseAJAX([
+            'status' => 'success',
+            'data'   => [
+                'msgsno' => []
+            ]
+        ]);
     }
 
     public function iframeEmptyAction()
@@ -281,10 +325,16 @@ class Mail extends BaseController
             $this->prepareAttachment($att);
         }
 
-        return $this->responseAJAX([ 'data' => $message, 'related' => $repo->getRelated($message) ]);
+        return $this->responseAJAX([
+            'status' => 'success',
+            'data'   => [
+                'data'    => $message,
+                'related' => $repo->getRelated($message)
+            ]
+        ]);
     }
 
-    public function prepareAttachment($attachment)
+    protected function prepareAttachment($attachment)
     {
         $request = $this->request();
 
@@ -496,7 +546,10 @@ class Mail extends BaseController
             $attachments[] = $filename;
         }
 
-        return $this->responseAJAX([ 'data' => $attachments ]);
+        return $this->responseAJAX([
+            'status' => 'success',
+            'data'   => $attachments
+        ]);
     }
 
     public function markAsAction($request)
@@ -514,10 +567,22 @@ class Mail extends BaseController
                 $box->markAs($id, $request->get('markas'));
             }
 
-            return $this->responseAJAX(['msgsno' => $request->get('msgsno'), 'markas' => $request->get('markas') ]);
+            return $this->responseAJAX([
+                'status' => 'success',
+                'data'   => [
+                    'msgsno' => $request->get('msgsno'),
+                    'markas' => $request->get('markas')
+                ]
+            ]);
         }
 
-        return $this->responseAJAX([ 'msgsno' => $request->get('msgno'), 'markas' => '' ]);
+        return $this->responseAJAX([
+            'status' => 'success',
+            'data'   => [
+                'msgsno' => $request->get('msgno'),
+                'markas' => ''
+            ]
+        ]);
     }
 
     public function sendAction($request)
@@ -526,8 +591,14 @@ class Mail extends BaseController
 
         if(! $account)
         {
-            return $this->responseAJAX([ 'status' => 'error', 'message' => 'Brak skonfigurowanego konta pocztowego, z którego można wysłać wiadomość.' ]);
+            return $this->responseAJAX([
+                'status' => 'error',
+                'message' => 'Brak skonfigurowanego konta pocztowego, z którego można wysłać wiadomość.'
+            ]);
         }
+
+        $this->repo('Account')->decryptPasswords($account);
+        $this->completeAccountWithPassword($account);
 
         try {
             $to  = new EmailAddressParser($request->get('to'));
@@ -618,13 +689,29 @@ class Mail extends BaseController
             $result = $mailer->send($message);
 
             $this->openBoxFromRequest($request)->appendMessage($message->toString(), $this->imap($account)->getSentBoxName(), '\\Seen');
+
+            // Save stat
+            if($this->openSettings('app')->get('mod.mail.stat.savesentmailsinfo') == 1)
+            {
+                $stat = new SentMail;
+                $stat->setUserId($this->user()->getId());
+                $stat->setDate(time());
+
+                $this->repo('SentMail')->save($stat);
+            }
         }
         catch(\Exception $e)
         {
-            return $this->responseAJAX([ 'status' => 'error', 'message' => $e->getMessage() ]);
+            return $this->responseAJAX([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ]);
         }
 
-        return $this->responseAJAX([ 'status' => $result ? 'success' : 'error', 'message' => 'Wiadomość została wysłana.' ]);
+        return $this->responseAJAX([
+            'status'  => $result ? 'success' : 'error',
+            'message' => 'Wiadomość została wysłana.'
+        ]);
     }
 
     public function uploadAttachmentAction($request)
@@ -651,17 +738,41 @@ class Mail extends BaseController
         {
             unlink($filepath);
 
-            return $this->responseAJAX([ 'status' => 'success' ]);
+            return $this->responseAJAX([
+                'status' => 'success'
+            ]);
         }
         else
         {
-            return $this->responseAJAX([ 'status' => 'error', 'message' => 'Plik nie istnieje.' ]);
+            return $this->responseAJAX([
+                'status'  => 'error',
+                'message' => 'Plik nie istnieje.'
+            ]);
+        }
+    }
+
+    public function completeAccountWithPassword(Account $account)
+    {
+        if($account->getSavePassword() == 0 && isset($_SESSION['mail']['account']) && is_array($_SESSION['mail']['account']))
+        {
+            foreach($_SESSION['mail']['account'] as $id => $password)
+            {
+                if($id == $account->getId())
+                {
+                    $account->setImapPassword($password);
+                    $account->setSmtpPassword($password);
+                }
+            }
         }
     }
 
     private function openBoxFromRequest($request)
     {
-        $imap = $this->imap($this->repo('Account')->find($request->get('account')));
+        $repo = $this->repo('Account');
+        $account = $repo->find($request->get('account'));
+        $repo->decryptPasswords($account);
+
+        $imap = $this->imap($account);
 
         return $imap->openBox($request->get('mailbox'))
             ->setAttachmentsDirectory(BASEPATH.'/app/Cache/incomming-attachments/'.$this->request()->getSession()->getId())
@@ -677,6 +788,8 @@ class Mail extends BaseController
 
     private function imap(Account $account)
     {
+        $this->completeAccountWithPassword($account);
+
         $imap = new IMAP($account->getImapUsername(), $account->getImapPassword());
         $imap->setHost($account->getImapHost());
         $imap->setPort($account->getImapPort());

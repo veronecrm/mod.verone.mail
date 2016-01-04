@@ -1,7 +1,7 @@
 /**
  * Verone CRM | http://www.veronecrm.com
  *
- * @copyright  Copyright (C) 2015 Adam Banaszkiewicz
+ * @copyright  Copyright (C) 2015 - 2016 Adam Banaszkiewicz
  * @license    GNU General Public License version 3; see license.txt
  */
 
@@ -151,6 +151,8 @@ Mail.Layout.Segment.List = function(node, layout) {
         {
             this.node.find('.mails-list .mails-list-inner').mCustomScrollbar('update');
         }
+
+        return this;
     }
 
     /**
@@ -183,7 +185,7 @@ Mail.Layout.Segment.List = function(node, layout) {
     /**
      * Scrolls to top of the list.
      *
-     * @return void
+     * @return self
      */
     this.scrollTop = function() {
         if($.fn.mCustomScrollbar)
@@ -194,13 +196,15 @@ Mail.Layout.Segment.List = function(node, layout) {
         {
             this.node.find('.mails-list .mails-list-inner').scrollTop(0);
         }
+
+        return this;
     };
 
 
     /**
      * Scrolls to first of the selected (on list) message.
      *
-     * @return void
+     * @return self
      */
     this.scrollToFirstSelected = function() {
         var list       = this.node.find('.mails-list');
@@ -253,6 +257,8 @@ Mail.Layout.Segment.List = function(node, layout) {
         {
             this.node.find('.mails-list .mails-list-inner').scrollTop(scrollTo);
         }
+
+        return this;
     };
 
     /**
@@ -268,27 +274,35 @@ Mail.Layout.Segment.List = function(node, layout) {
      * Shows loader that covers all acounts and view
      * information text for user to wait.
      *
-     * @return void
+     * @return selfself
      */
     this.showLoader = function() {
         this.node.find('.info-layer.type-loading').show();
+
+        return this;
     };
 
     /**
      * Hides loader.
      *
-     * @return void
+     * @return selfself
      */
     this.hideLoader = function() {
         this.node.find('.info-layer.type-loading').hide();
+
+        return this;
     };
 
     this.showNoMessages = function() {
         this.node.find('.info-layer.type-no-messages').show();
+
+        return this;
     };
 
     this.hideNoMessages = function() {
         this.node.find('.info-layer.type-no-messages').hide();
+
+        return this;
     };
 
     /**
@@ -303,10 +317,12 @@ Mail.Layout.Segment.List = function(node, layout) {
     /**
      * Sets focus on messages list.
      *
-     * @return void
+     * @return selfself
      */
     this.setFocus = function() {
         this.node.find('.mails-list').trigger('focus');
+
+        return this;
     };
 
     /**
@@ -315,8 +331,7 @@ Mail.Layout.Segment.List = function(node, layout) {
      * @param  integer id Message ID
      * @return jQuery
      */
-    this.getMessageRow = function(id)
-    {
+    this.getMessageRow = function(id) {
         return this.node.find('.mails-list .wrapp div[data-msgno="' + id + '"]');
     };
 
@@ -324,7 +339,7 @@ Mail.Layout.Segment.List = function(node, layout) {
      * Selects (check as selected) rows with given ID's in array.
      * 
      * @param  array ids Array of messages ID's.
-     * @return void
+     * @return self
      */
     this.select = function(ids) {
         for(var i in ids)
@@ -337,13 +352,15 @@ Mail.Layout.Segment.List = function(node, layout) {
         }
 
         this.layout.app.trigger('onMessageSelectedChange', {'ids': ids, 'type': 'select'});
+
+        return this;
     };
 
     /**
      * Deselects (uncheck as selected) rows with given ID's in array.
      * 
      * @param  array ids Array of messages ID's.
-     * @return void
+     * @return self
      */
     this.deselect = function(ids) {
         for(var i in ids)
@@ -356,12 +373,14 @@ Mail.Layout.Segment.List = function(node, layout) {
         }
 
         this.layout.app.trigger('onMessageSelectedChange', {'ids': ids, 'type': 'deselect'});
+
+        return this;
     };
 
     /**
      * Selects all mails in list.
      * 
-     * @return void
+     * @return self
      */
     this.selectAll = function() {
         var ids = [];
@@ -375,12 +394,14 @@ Mail.Layout.Segment.List = function(node, layout) {
         });
 
         this.layout.app.trigger('onMessageSelectedChange', {'ids': ids, 'type': 'select'});
+
+        return this;
     };
 
     /**
      * Deselects all selected mails in list.
      * 
-     * @return void
+     * @return self
      */
     this.deselectAll = function() {
         var ids = [];
@@ -394,12 +415,14 @@ Mail.Layout.Segment.List = function(node, layout) {
         });
 
         this.layout.app.trigger('onMessageSelectedChange', {'ids': ids, 'type': 'deselect'});
+
+        return this;
     };
 
     /**
      * Selects (check as selected) all unseen messages on list.
      * 
-     * @return void
+     * @return self
      */
     this.selectUnseen = function() {
         var ids = [];
@@ -413,6 +436,8 @@ Mail.Layout.Segment.List = function(node, layout) {
         });
 
         this.layout.app.trigger('onMessageSelectedChange', {'ids': ids, 'type': 'select'});
+
+        return this;
     };
 
     /**
@@ -454,38 +479,44 @@ Mail.Layout.Segment.List = function(node, layout) {
      * Mark given mails ID's as (status) unseen.
      * 
      * @param  array ids Array of ID's.
-     * @return void
+     * @return self
      */
     this.markAsUnseen = function(ids) {
         for(var i in ids)
         {
             this.node.find('.mails-list .wrapp div[data-msgno="' + ids[i] + '"]').addClass('status-unseen');
         }
+
+        return this;
     };
 
     /**
      * Mark given mails ID's as (status) seen.
      * 
      * @param  array ids Array of ID's.
-     * @return void
+     * @return self
      */
     this.markAsSeen = function(ids) {
         for(var i in ids)
         {
             this.node.find('.mails-list .wrapp div[data-msgno="' + ids[i] + '"]').removeClass('status-unseen');
         }
+
+        return this;
     };
 
     /**
      * Removes messages rows from messages list.
      * 
      * @param  array ids Array of messages ID's.
-     * @return void
+     * @return self
      */
     this.removeRows = function(ids) {
         for(var i in ids)
         {
             this.node.find('.mails-list .wrapp div[data-msgno="' + ids[i] + '"]').remove();
         }
+
+        return this;
     };
 };

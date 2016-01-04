@@ -2,12 +2,13 @@
 /**
  * Verone CRM | http://www.veronecrm.com
  *
- * @copyright  Copyright (C) 2015 Adam Banaszkiewicz
+ * @copyright  Copyright (C) 2015 - 2016 Adam Banaszkiewicz
  * @license    GNU General Public License version 3; see license.txt
  */
 
 namespace App\Module\Mail\ORM;
 
+use Zend\Crypt\BlockCipher;
 use CRM\ORM\Repository;
 use App\Module\Mail\App\IncomingMail;
 
@@ -96,5 +97,36 @@ class AccountRepository extends Repository
         $bytes /= pow(1024, $pow);
 
         return round($bytes, $precision).' '.$units[$pow]; 
-    } 
+    }
+
+    public function encryptPasswords(Account $account)
+    {
+        $blockCipher = BlockCipher::factory('mcrypt', array('algo' => 'aes'));
+        $blockCipher->setKey($this->getEncryptionKey());
+
+        if($account->getSmtpPassword())
+            $account->setSmtpPassword($blockCipher->encrypt($account->getSmtpPassword()));
+        if($account->getImapPassword())
+            $account->setImapPassword($blockCipher->encrypt($account->getImapPassword()));
+
+        return $account;
+    }
+
+    public function decryptPasswords(Account $account)
+    {
+        $blockCipher = BlockCipher::factory('mcrypt', array('algo' => 'aes'));
+        $blockCipher->setKey($this->getEncryptionKey());
+
+        if($account->getSmtpPassword())
+            $account->setSmtpPassword($blockCipher->decrypt($account->getSmtpPassword()));
+        if($account->getImapPassword())
+            $account->setImapPassword($blockCipher->decrypt($account->getImapPassword()));
+
+        return $account;
+    }
+
+    protected function getEncryptionKey()
+    {
+        return 'mod.verone.mail|'.$this->user()->getId();
+    }
 }

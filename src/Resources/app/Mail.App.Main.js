@@ -1,7 +1,7 @@
 /**
  * Verone CRM | http://www.veronecrm.com
  *
- * @copyright  Copyright (C) 2015 Adam Banaszkiewicz
+ * @copyright  Copyright (C) 2015 - 2016 Adam Banaszkiewicz
  * @license    GNU General Public License version 3; see license.txt
  */
 
@@ -9,17 +9,15 @@ Mail.App.Main = function(options) {
     this.layout;
     this.api;
     this.manager = {
-        account: null,
-        list: null,
-        message: null,
-        recipient: null,
-        window: null
+        account   : null,
+        list      : null,
+        message   : null,
+        recipient : null,
+        window    : null
     };
     this.options = options;
 
     this.dispatcher = null;
-
-    this.generatedTimeoutedErrorsIntervals = {};
 
     this.preInit = function() {
         this.dispatcher = new Mail.EventDispatcher;
@@ -73,31 +71,6 @@ Mail.App.Main = function(options) {
 
     this.getManager = function(name) {
         return this.manager[name];
-    };
-
-    this.generateTimeoutedErrorWithCallback = function(ID, text, secondsTimeout, callback) {
-        if($('.mod-mail-' + ID).length == 0)
-        {
-            APP.FluidNotification.open(text.replace('%d', '<span class="mod-mail-' + ID + '">' + secondsTimeout + '</span>'), { theme: 'error', sticky: true });
-        }
-
-        var self = this;
-
-        self.generatedTimeoutedErrorsIntervals[ID] = setInterval(function() {
-            var val = parseInt($('.mod-mail-' + ID).text());
-
-            $('.mod-mail-' + ID).text(val - 1);
-
-            if(val == 1)
-            {
-                clearInterval(self.generatedTimeoutedErrorsIntervals[ID]);
-                $('.mod-mail-' + ID).parent().parent().data('jGrowl').sticky = false;
-
-                setTimeout(function() {
-                    callback();
-                }, 1000);
-            }
-        }, 1000);
     };
 
     /**

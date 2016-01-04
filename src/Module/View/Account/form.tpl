@@ -42,7 +42,6 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-12">
-
             <form action="<?php echo $app->createUrl('Mail', 'Account', $account->getId() ? 'update' : 'save'); ?>" method="post" id="form" class="form-validation">
                 <input type="hidden" name="id" value="<?php echo $account->getId(); ?>" />
                 <div class="row">
@@ -57,6 +56,16 @@
                                 <div class="form-group">
                                     <label for="senderName" class="control-label">{{ t('mailAccountSenderName') }}</label>
                                     <input class="form-control required" type="text" id="senderName" name="senderName" value="<?php echo $account->getId() ? $account->getSenderName() : $app->user()->getName(); ?>" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="savePassword" class="control-label">{{ t('mailSavePasswordInDatabase') }} <a href="#" class="btn-save-password-help help-inline" data-toggle="tooltip" title="{{ t('help') }}"><i class="fa fa-support text-danger"></i></a></label>
+                                    <div class="input-group">
+                                        <select name="savePassword" id="savePassword" class="form-control ">
+                                            <option value="1"<?php echo $account->getSavePassword() == '1' ? ' selected="selected"' : ''; ?>>{{ t('syes') }}</option>
+                                            <option value="0"<?php echo $account->getSavePassword() == '0' ? ' selected="selected"' : ''; ?>>{{ t('sno') }}</option>
+                                        </select>
+                                        <a class="input-group-addon btn-save-password-help help-inline" href="#" data-toggle="tooltip" title="{{ t('help') }}"><i class="fa fa-support text-danger"></i></a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -82,7 +91,12 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="imapPassword" class="control-label">{{ t('mailPassword') }}</label>
-                                    <input class="form-control required" type="password" id="imapPassword" name="imapPassword" value="{{ $account->getImapPassword() }}" />
+                                    <div class="input-group">
+                                        <input class="form-control" type="password" id="imapPassword" name="imapPassword" value="{{ $account->getImapPassword() }}" />
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-default btn-toggle-password-control" type="button">{{ t('mailShowPassword') }}</button>
+                                        </span>
+                                    </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="imapSecurity" class="control-label">{{ t('mailSecurity') }}</label>
@@ -136,7 +150,12 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="smtpPassword" class="control-label">{{ t('mailPassword') }}</label>
-                                    <input class="form-control required" type="password" id="smtpPassword" name="smtpPassword" value="{{ $account->getSmtpPassword() }}" />
+                                    <div class="input-group">
+                                        <input class="form-control" type="password" id="smtpPassword" name="smtpPassword" value="{{ $account->getSmtpPassword() }}" />
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-default btn-toggle-password-control" type="button">{{ t('mailShowPassword') }}</button>
+                                        </span>
+                                    </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="smtpSecurity" class="control-label">{{ t('mailSecurity') }}</label>
@@ -149,14 +168,6 @@
                                 <div class="row form-group">
                                     <div class="col-md-6 text-right">
                                         <button type="button" id="check-connection-smtp" class="btn btn-primary" data-loading-text="{{ t('mailWait') }}">{{ t('mailCheckConnection') }}</button>
-                                        <script>
-                                            $('#check-connection-smtp').on('click', function () {
-                                                var $btn = $(this).button('loading');
-                                                setTimeout(function() {
-                                                    $btn.button('reset');
-                                                }, 2000);
-                                            });
-                                        </script>
                                     </div>
                                     <div class="col-md-6">
                                         <label style="text-align:left;">{{ t('mailStatus') }}<span style="color:#aaa;">{{ t('mailStatusLack') }}</span></label>
@@ -166,92 +177,164 @@
                         </div>
                     </div>
                 </div>
-                <script>
-                    $('#check-connection-imap').on('click', function () {
-                        var $btn = $(this).button('loading');
-
-                        $.ajax({
-                            type     : "POST",
-                            url      : APP.createUrl('Mail', 'Mail', 'connectionCheck'),
-                            data     : {
-                                type: 'imap',
-                                imapHost : $('#imapHost').val(),
-                                imapPort : $('#imapPort').val(),
-                                imapUsername : $('#imapUsername').val(),
-                                imapPassword : $('#imapPassword').val(),
-                                imapSecurity : $('#imapSecurity').val(),
-                                imapCertificateValidation : $('#imapCertificateValidation').val(),
-                                imapProtocol : $('#imapProtocol').val()
-                            },
-                            success : function(msg) {
-                                console.log(msg);
-
-                                try {
-                                    var result = jQuery.parseJSON(msg);
-
-                                    if(result.status)
-                                    {
-                                        $btn.parent().parent().find('label span').text(result.message).css('color', (result.status == 'success' ? '#5CB85C' : '#D9534F'));
-                                    }
-                                }
-                                catch(e) {
-                                    $btn.parent().parent().find('label span').text('Serwer zwrócił błędne dane: ' + e.message).css('color', '#D9534F');
-                                }
-
-                                $btn.button('reset');
-                            },
-                            error:    function(error, textStatus, errorThrown) {
-                                console.log(error);
-
-                                $btn.parent().parent().find('label span').text('Serwer zwrócił status błędu - 500 Internal Server Error.').css('color', '#D9534F');
-
-                                $btn.button('reset');
-                            }
-                        });
-                    });
-
-                    $('#check-connection-smtp').on('click', function () {
-                        var $btn = $(this).button('loading');
-
-                        $.ajax({
-                            type     : "POST",
-                            url      : APP.createUrl('Mail', 'Mail', 'connectionCheck'),
-                            data     : {
-                                type: 'smtp',
-                                smtpHost : $('#smtpHost').val(),
-                                smtpPort : $('#smtpPort').val(),
-                                smtpUsername : $('#smtpUsername').val(),
-                                smtpPassword : $('#smtpPassword').val(),
-                                smtpSecurity : $('#smtpSecurity').val()
-                            },
-                            success : function(msg) {
-                                console.log(msg);
-
-                                try {
-                                    var result = jQuery.parseJSON(msg);
-
-                                    if(result.status)
-                                    {
-                                        $btn.parent().parent().find('label span').text(result.message).css('color', (result.status == 'success' ? '#5CB85C' : '#D9534F'));
-                                    }
-                                }
-                                catch(e) {
-                                    $btn.parent().parent().find('label span').text('Serwer zwrócił błędne dane: ' + e.message).css('color', '#D9534F');
-                                }
-
-                                $btn.button('reset');
-                            },
-                            error:    function(error, textStatus, errorThrown) {
-                                console.log(error);
-
-                                $btn.parent().parent().find('label span').text('Serwer zwrócił status błędu - 500 Internal Server Error.').css('color', '#D9534F');
-
-                                $btn.button('reset');
-                            }
-                        });
-                    });
-                </script>
             </form>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="save-password-help" tabindex="-1" role="dialog" aria-labelledby="save-password-help-modal-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Zamknij"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="save-password-help-modal-label">{{ t('mailWhatMeanSavePasswordInDatabase') }}</h4>
+            </div>
+            <div class="modal-body">
+                <p>{{ t('mailWhatMeanSavePasswordInDatabaseParagraphOne') }}</p>
+                <p>{{ t('mailWhatMeanSavePasswordInDatabaseParagraphTwo') }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    $(function() {
+        $('.btn-save-password-help').click(function() {
+            $('#save-password-help').modal();
+            return false;
+        });
+
+        APP.FormValidation.bind('form', '#imapPassword', {
+            validate: function(elm, val) {
+                if($.trim(val) == '' && $('#savePassword').val() == 1)
+                {
+                    return false;
+                }
+            },
+            errorText: APP.t('thisFieldIsRequired')
+        });
+
+        APP.FormValidation.bind('form', '#smtpPassword', {
+            validate: function(elm, val) {
+                if($.trim(val) == '' && $('#savePassword').val() == 1)
+                {
+                    return false;
+                }
+            },
+            errorText: APP.t('thisFieldIsRequired')
+        });
+
+        $('#check-connection-smtp').on('click', function () {
+            var btn = $(this).button('loading');
+            setTimeout(function() {
+                btn.button('reset');
+            }, 2000);
+        });
+
+        $('.btn-toggle-password-control').click(function() {
+            var pass = $(this).closest('.form-group').find('input[type=password]');
+
+            if(pass.length == 1)
+            {
+                pass.attr('type', 'text');
+                $(this).text('{{ t('mailHidePassword') }}');
+                return false;
+            }
+
+            var text = $(this).closest('.form-group').find('input[type=text]');
+
+            if(text.length == 1)
+            {
+                text.attr('type', 'password');
+                $(this).text('{{ t('mailShowPassword') }}');
+                return false;
+            }
+        });
+
+        $('#check-connection-imap').on('click', function () {
+            var btn = $(this).button('loading');
+
+            $.ajax({
+                type     : "POST",
+                url      : APP.createUrl('Mail', 'Mail', 'connectionCheck'),
+                data     : {
+                    type: 'imap',
+                    imapHost : $('#imapHost').val(),
+                    imapPort : $('#imapPort').val(),
+                    imapUsername : $('#imapUsername').val(),
+                    imapPassword : $('#imapPassword').val(),
+                    imapSecurity : $('#imapSecurity').val(),
+                    imapCertificateValidation : $('#imapCertificateValidation').val(),
+                    imapProtocol : $('#imapProtocol').val()
+                },
+                success : function(msg) {
+                    console.log(msg);
+
+                    try {
+                        var result = jQuery.parseJSON(msg);
+
+                        if(result.status)
+                        {
+                            btn.parent().parent().find('label span').text(result.message).css('color', (result.status == 'success' ? '#5CB85C' : '#D9534F'));
+                        }
+                    }
+                    catch(e) {
+                        btn.parent().parent().find('label span').text('Serwer zwrócił błędne dane: ' + e.message).css('color', '#D9534F');
+                    }
+
+                    btn.button('reset');
+                },
+                error:    function(error, textStatus, errorThrown) {
+                    console.log(error);
+
+                    btn.parent().parent().find('label span').text('Serwer zwrócił status błędu - 500 Internal Server Error.').css('color', '#D9534F');
+
+                    btn.button('reset');
+                }
+            });
+        });
+
+        $('#check-connection-smtp').on('click', function () {
+            var btn = $(this).button('loading');
+
+            $.ajax({
+                type     : "POST",
+                url      : APP.createUrl('Mail', 'Mail', 'connectionCheck'),
+                data     : {
+                    type: 'smtp',
+                    smtpHost : $('#smtpHost').val(),
+                    smtpPort : $('#smtpPort').val(),
+                    smtpUsername : $('#smtpUsername').val(),
+                    smtpPassword : $('#smtpPassword').val(),
+                    smtpSecurity : $('#smtpSecurity').val()
+                },
+                success : function(msg) {
+                    console.log(msg);
+
+                    try {
+                        var result = jQuery.parseJSON(msg);
+
+                        if(result.status)
+                        {
+                            btn.parent().parent().find('label span').text(result.message).css('color', (result.status == 'success' ? '#5CB85C' : '#D9534F'));
+                        }
+                    }
+                    catch(e) {
+                        btn.parent().parent().find('label span').text('Serwer zwrócił błędne dane: ' + e.message).css('color', '#D9534F');
+                    }
+
+                    btn.button('reset');
+                },
+                error:    function(error, textStatus, errorThrown) {
+                    console.log(error);
+
+                    btn.parent().parent().find('label span').text('Serwer zwrócił status błędu - 500 Internal Server Error.').css('color', '#D9534F');
+
+                    btn.button('reset');
+                }
+            });
+        });
+    });
+</script>

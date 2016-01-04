@@ -1,7 +1,7 @@
 /**
  * Verone CRM | http://www.veronecrm.com
  *
- * @copyright  Copyright (C) 2015 Adam Banaszkiewicz
+ * @copyright  Copyright (C) 2015 - 2016 Adam Banaszkiewicz
  * @license    GNU General Public License version 3; see license.txt
  */
 
@@ -82,6 +82,16 @@ Mail.App.Account.Manager = function(app) {
             self.updateStatuses();
         });
 
+        this.app.bind('onAccountsListEmpty', function() {
+            self.app.layout.segment('accounts')
+                .showAccountsEmptyPanel()
+                .hideLoader();
+        });
+
+        this.app.bind('onMarkAs', function(account, mailbox, msgsno, markas) {
+            self.updateNotification();
+        });
+
 
         this.resolveAccounts();
 
@@ -89,39 +99,102 @@ Mail.App.Account.Manager = function(app) {
 
         if(ids.length == 0)
         {
-            this.app.layout.segment('accounts').showAccountsEmptyPanel();
-            return;
+            setTimeout(function() {
+                self.app.trigger('onAccountsListEmpty');
+            }, 400);
+        }
+        else
+        {
+            this.app.layout.segment('accounts').showLoader();
         }
 
-        this.app.layout.segment('accounts').showLoader();
+        var accountNeedToProvidePassword = this.getAccountsThatNeedToProvidePassword();
 
-        this.app.api.call('getAccountsMailboxes', { 'accounts': ids }, function(msg) {
-            try {
-                var result = jQuery.parseJSON(msg);
-            }
-            catch(e) {
-                self.app.generateTimeoutedErrorWithCallback('maam-renderaccounts', APP.t('mailErrorWhenTryingGetListOfAccountsTryingAgain'), 5, function() {
-                    self.renderAccounts(refreshOnly);
-                });
+        if(accountNeedToProvidePassword.length)
+        {
+            this.accountsPasswordRetrive();
+        }
+        else
+        {
+            this.renderMailboxes();
+        }
+    };
 
-                console.log(['this.renderAccounts', e]);
-                return false;
-            }
+    this.renderMailboxes = function() {
+        var self = this;
 
-            self.resolveMailboxes(result.data);
+        this.app.api.call('getAccountsMailboxes', { 'accounts': this.getAccountsIds() }, function(result) {
+            self.resolveMailboxes(result);
+            self.app.trigger('onAccountsReady');
         });
 
         setInterval(function() {
             self.app.trigger('onGlobalRefresh');
         }, 600000);
-    }
+    };
+
+    this.accountsPasswordRetrive = function() {
+        var self = this;
+        var accountNeedToProvidePassword = this.getAccountsThatNeedToProvidePassword();
+
+        if(accountNeedToProvidePassword.length)
+        {
+            this.app.layout.segment('accounts').showAccountPasswordProvider(accountNeedToProvidePassword[0].id, accountNeedToProvidePassword[0].name, function(id, password, terminationCallback) {
+                if(password === undefined)
+                {
+                    accountNeedToProvidePassword[0].setPassword(undefined);
+                    accountNeedToProvidePassword[0].needAskForPassword = false;
+                    accountNeedToProvidePassword[0].active = false;
+                    self.accountsPasswordRetrive();
+                    return;
+                }
+
+                if($.trim(password) == '')
+                {
+                    terminationCallback(false);
+                    return;
+                }
+
+                self.app.api.call('getAccountsMailboxes', { 'accounts': [ id ], 'passwords': [ { 'id': id, 'password': password } ] }, function(result) {
+                    accountNeedToProvidePassword[0].setPassword(password);
+                    accountNeedToProvidePassword[0].needAskForPassword = false;
+                    terminationCallback(true);
+                    self.accountsPasswordRetrive();
+                }, function() {
+                    terminationCallback(false);
+                });
+            });
+        }
+        else
+        {
+            this.renderMailboxes();
+        }
+    };
+
+    this.getAccountsThatNeedToProvidePassword = function() {
+        var list = [];
+
+        for(var i in this.accounts)
+        {
+            if(this.accounts[i].isNeedAskForPassword() && this.accounts[i].getPassword() == '')
+            {
+                list.push(this.accounts[i]);
+            }
+        }
+
+        return list;
+    };
 
     this.getAccountsIds = function() {
         var ids = [];
 
         for(var i in this.accounts)
         {
-            ids.push(this.accounts[i].id);
+            // Only active accounts.
+            if(this.accounts[i].active)
+            {
+                ids.push(this.accounts[i].id);
+            }
         }
 
         return ids;
@@ -137,9 +210,12 @@ Mail.App.Account.Manager = function(app) {
             account.refreshTime = this.app.options.accounts[i].refreshTime;
             account.senderName  = this.app.options.accounts[i].senderName;
             account.editLink    = this.app.options.accounts[i].editLink;
+            account.needAskForPassword = this.app.options.accounts[i].needAskForPassword;
 
             this.accounts.push(account);
         }
+
+        return this;
     };
 
     this.resolveMailboxes = function(data) {
@@ -154,7 +230,7 @@ Mail.App.Account.Manager = function(app) {
             }
         }
 
-        this.app.trigger('onAccountsReady');
+        return this;
     };
 
     this.getAccount = function(id) {
@@ -175,7 +251,7 @@ Mail.App.Account.Manager = function(app) {
      *
      * @param object mailboxes Object stored mailboxes to update. If not provided,
      *                         method updates every one mailbox.
-     * @return void
+     * @return self
      */
     this.updateStatuses = function(mailboxes) {
         var self = this;
@@ -199,31 +275,31 @@ Mail.App.Account.Manager = function(app) {
             }
         }
 
-        this.app.api.call('mailboxesStatus', { mailboxes: mailboxes }, function(msg) {
-            var result = jQuery.parseJSON(msg);
-
-            for(var r in result.data)
+        this.app.api.call('mailboxesStatus', { mailboxes: mailboxes }, function(result) {
+            for(var r in result)
             {
-                var account = self.getAccount(result.data[r].account);
+                var account = self.getAccount(result[r].account);
 
                 if(! account)
                 {
                     continue;
                 }
 
-                var mailbox = account.getMailbox(result.data[r].mailbox);
+                var mailbox = account.getMailbox(result[r].mailbox);
 
                 if(! mailbox)
                 {
                     continue;
                 }
 
-                mailbox.setMessagesTotal(result.data[r].total);
-                mailbox.setMessagesUnseen(result.data[r].unseen);
+                mailbox.setMessagesTotal(result[r].total);
+                mailbox.setMessagesUnseen(result[r].unseen);
             }
 
             self.app.trigger('onMailboxesStatusUpdate');
         });
+
+        return this;
     };
 
     this.updateSentMailbox = function(account) {
@@ -241,6 +317,8 @@ Mail.App.Account.Manager = function(app) {
         }
 
         this.updateStatuses(mailboxes);
+
+        return this;
     };
 
     this.updateTrashMailbox = function(account) {
@@ -258,6 +336,8 @@ Mail.App.Account.Manager = function(app) {
         }
 
         this.updateStatuses(mailboxes);
+
+        return this;
     };
 
     this.updateCurrentMailbox = function() {
@@ -265,6 +345,8 @@ Mail.App.Account.Manager = function(app) {
             account: this.account.id,
             mailbox: this.mailbox.id
         }]);
+
+        return this;
     };
 
     this.updateCurrentAccount = function() {
@@ -279,6 +361,8 @@ Mail.App.Account.Manager = function(app) {
         }
 
         this.updateStatuses(mailboxes);
+
+        return this;
     };
 
     /**
@@ -286,7 +370,7 @@ Mail.App.Account.Manager = function(app) {
      * 
      * @param  object account Account object.
      * @param  object mailbox Mailbox object.
-     * @return void
+     * @return self
      */
     this.select = function(account, mailbox) {
         var accountChanged = false;
@@ -326,10 +410,11 @@ Mail.App.Account.Manager = function(app) {
         }
 
         this.app.layout.segment('accounts').setActiveElement(this.account.id, this.mailbox.id);
+
+        return this;
     };
 
     this.notificationInterval = null;
-    this.pageTitle = $('head title').text();
     this.updateNotification = function() {
         var self = this;
         var total = 0;
@@ -347,27 +432,44 @@ Mail.App.Account.Manager = function(app) {
 
         if(total == 0)
         {
-            $('#page-favicon').attr('href', APP.filePath('/images/fi.png'));
-            $('head title').text(self.pageTitle);
-
-            clearInterval(this.notificationInterval);
+            APP.PageTitle.clearInterval(this.notificationInterval);
+            this.notificationInterval = null;
         }
         else
         {
-            if(total <= 10)
+            var title = APP.t('mailNewMessageCount').replace('%d', total);
+
+            if(this.notificationInterval == null)
             {
-                $('#page-favicon').attr('href', APP.filePath('images/fi-' + total + '.png'));
+                this.notificationInterval = APP.PageTitle.setInterval(title);
             }
             else
             {
-                $('#page-favicon').attr('href', APP.filePath('/images/fi-9+.png'));
+                APP.PageTitle.updateInterval(this.notificationInterval, title);
             }
-
-            clearInterval(this.notificationInterval);
-
-            self.notificationInterval = setInterval(function() {
-                $('head title').text($('head title').text() == self.pageTitle ? APP.t('mailNewMessageCount').replace('%d', total) : self.pageTitle);
-            }, 1000);
         }
+
+        this.generateFavicon(total);
+    };
+
+    this.originalFavicon = document.getElementById('page-favicon').href;
+    this.generateFavicon = function(number) {
+        if(number == 0)
+        {
+            document.getElementById('page-favicon').href = this.originalFavicon;
+            return;
+        }
+
+        var canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+
+        var ctx = canvas.getContext('2d');
+        ctx.font = number <= 9 ? 'bold 128px "Open Sans"' : 'bold 110px "Open Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#0088CC';
+        ctx.fillText(number <= 9 ? number : '9+', canvas.width / 2, 110);
+
+        document.getElementById('page-favicon').href = canvas.toDataURL("image/x-icon");
     };
 };

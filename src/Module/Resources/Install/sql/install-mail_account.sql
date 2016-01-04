@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS `#__mail_account` (
   `owner` int(11) NOT NULL,
   `name` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
   `senderName` varchar(127) COLLATE utf8_unicode_ci NOT NULL,
+  `savePassword` char(1) COLLATE utf8_unicode_ci NOT NULL DEFAULT '1',
   `imapHost` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `imapUsername` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `imapPassword` varchar(255) COLLATE utf8_unicode_ci NOT NULL,

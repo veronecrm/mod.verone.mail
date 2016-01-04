@@ -6,6 +6,9 @@
         <div id="accounts">
             <div class="account-list">
                 <div class="wrapp"></div>
+                @if count($accounts) == 0
+                    <div style="padding:30px 10px;text-transform:uppercase;text-align:center;font-size:15px;font-weight:bold;color:#ccc;">Brak skrzynek pocztowych</div>
+                @endif
                 <div class="accounts-configuration-btn">
                     <a href="{{ createUrl('Mail', 'Account', 'index') }}" class="btn btn-default btn-block"><i class="fa fa-at"></i> {{ t('mailAccounts') }}</a>
                 </div>
@@ -89,6 +92,12 @@
                             </ul>
                         </span>
                     </div>
+
+                    <div class="info-layer type-empty">
+                        <div>
+                            <div>&nbsp;</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="mails-list" tabindex="-1">
                     <div class="mails-list-inner">
@@ -141,6 +150,11 @@
                             <i class="fa fa-hand-o-left"></i>
                             {{ t('mailSelectMessage_ddd') }}
                         </div>
+                    </div>
+                </div>
+                <div class="info-layer type-empty">
+                    <div>
+                        <div>&nbsp;</div>
                     </div>
                 </div>
             </div>
@@ -284,6 +298,22 @@
     </div>
 </div>
 
+<div class="ve-panel mail-account-password hidden">
+    <div class="ve-bl"></div>
+    <div class="ve-fl">
+        <h4 class="text-center">Wymagane jest podanie hasła do konta:<br /> <big><strong style="display:block;padding:10px 0"></strong></big></h4>
+        <div class="form-group">
+            <input type="password" class="form-control text-center" placeholder="Podaj hasło" />
+        </div>
+        <div class="text-center">
+            <button type="button" class="btn btn-default">Zatwierdź</button>
+        </div>
+        <div class="loader loader-fit-to-container hidden">
+            <div class="loader-animate"></div>
+        </div>
+    </div>
+</div>
+
 <style>
     .attachments-progress-box {display:none;position:fixed;right:10px;bottom:10px;width:300px;min-height:100px;padding:15px;background-color:#fff;z-index:9999;border:1px solid #dddddd;border-top:3px solid #0088CC;border-radius:3px;box-shadow:0px 0px 5px rgba(0,0,0,.2);}
     .attachments-progress-box h3 {margin:0 0 15px 0;padding:0;font-size:20px;color:#444;}
@@ -323,6 +353,8 @@
     #list .mails-list-inner {position:absolute;left:0;top:0;bottom:0;right:0;overflow:auto;}
 
     .account-list {position:absolute;left:0;top:0;bottom:0;right:7px;overflow:auto;}
+    .account-list ul a .account-status {position:relative;float:right;}
+    .account-list ul a .account-name {display:block;padding:0 5px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
     .mail-window {display:none;left:0;top:0;right:0;bottom:0;position:fixed;background-color:rgba(0,0,0,.6);z-index:1000;}
     .mail-window .mail-window-wrap {left:20%;right:20%;top:10px;bottom:10px;position:absolute;z-index:2;background-color:#fff;box-shadow:0 0 5px rgba(0,0,0,.3);-webkit-border-radius: 6px;-moz-border-radius: 6px;border-radius: 6px;}
@@ -337,7 +369,7 @@
     .mail-window .mbtns button:hover {cursor:pointer;opacity:0.6;}
     .mail-window .mbtns button.mbtn-minimalyze {margin-top:5px;}
 
-    .info-layer {display:none;position:absolute;left:0;top:0;right:0;bottom:0;background-color:#fff;z-index:1;}
+    .info-layer {display:none;position:absolute;left:0;top:0;right:0;bottom:0;background-color:#fff;z-index:10;}
     .info-layer > div {position:static;left:auto;top:auto;display:table;line-height:1.4;width:100%;height:100%;overflow:hidden;text-transform:uppercase;text-align:center;font-size:15px;font-weight:bold;color:#ccc;}
     .info-layer > div > div {display:table-cell;width:100%;height:100%;vertical-align:middle;}
     .info-layer > div > div i {display:block;font-size:35px;text-align:center;margin:0 0 12px 0;}
@@ -382,7 +414,7 @@
     .mail-related-contacts a:after {display:inline-block;content:", ";padding-right:6px;}
     .mail-related-contacts a:last-child:after {display:none}
 
-    #accounts .heading {font-size:13px;text-transform:uppercase;padding:0px 10px;margin-top:10px;}
+    #accounts .heading {font-size:13px;text-transform:uppercase;padding:0px 10px;margin-top:10px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     #accounts .list-group {padding:10px 10px 30px;}
     #accounts .list-group li .badge .fa {margin:0;}
     #accounts .list-group li.mmt {color:#fff;background-color:#29B12B;}

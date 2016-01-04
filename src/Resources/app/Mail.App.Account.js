@@ -1,7 +1,7 @@
 /**
  * Verone CRM | http://www.veronecrm.com
  *
- * @copyright  Copyright (C) 2015 Adam Banaszkiewicz
+ * @copyright  Copyright (C) 2015 - 2016 Adam Banaszkiewicz
  * @license    GNU General Public License version 3; see license.txt
  */
 
@@ -43,6 +43,26 @@ Mail.App.Account = function(app) {
      * @type string
      */
     this.editLink = '';
+
+    /**
+     * Password to Account is provided, or we have to
+     * ask user for it?
+     * @type integer
+     */
+    this.needAskForPassword = 0;
+
+    /**
+     * If Account hasn't provided password (user won't store it in DB),
+     * here is stored password for this Account.
+     * @type string
+     */
+    this.password = '';
+
+    /**
+     * Account is active? If not, mailboxes wil not be retrived.
+     * @type boolean
+     */
+    this.active = true;
 
     /**
      * Mailboxes created in this account.
@@ -95,5 +115,34 @@ Mail.App.Account = function(app) {
         }
 
         return null;
+    };
+
+    /**
+     * Password to Account is provided, or we have to
+     * ask user for it?
+     * @return integer
+     */
+    this.isNeedAskForPassword = function()
+    {
+        return this.needAskForPassword;
+    };
+
+    /**
+     * Set Account password.
+     * @param  string password
+     * @return self
+     */
+    this.setPassword = function(password) {
+        this.password = password;
+
+        return this;
+    };
+
+    /**
+     * Return Account password.
+     * @return string
+     */
+    this.getPassword = function() {
+        return this.password;
     };
 };

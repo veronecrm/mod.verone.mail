@@ -6,9 +6,9 @@
     <!-- Package name. -->
     <name>Mail</name>
     <!-- Package version. -->
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <!-- Package release date. -->
-    <relase-date>2015.11.10</relase-date>
+    <relase-date>2016.01.04</relase-date>
     <!-- Package license. -->
     <license>GPLv3</license>
     <!-- Author details. -->
@@ -23,9 +23,11 @@
     <setting type="2" name="mod.mail.app.layout.type">2</setting>
     <setting type="2" name="mod.mail.app.layout.size.messages">260</setting>
     <setting type="2" name="mod.mail.app.layout.size.accounts">260</setting>
+    <setting type="0" name="mod.mail.stat.savesentmailsinfo">1</setting>
 
     <!-- Database queries list -->
     <db-query type="file" scenario="install">Module/Resources/Install/sql/install-mail_account.sql</db-query>
+    <db-query type="file" scenario="install">Module/Resources/Install/sql/install-mail_sent.sql</db-query>
     <db-query type="file" scenario="uninstall">Resources/Uninstall/sql/uninstall.sql</db-query>
 
 </package>

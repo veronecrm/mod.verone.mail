@@ -2,7 +2,7 @@
 /**
  * Verone CRM | http://www.veronecrm.com
  *
- * @copyright  Copyright (C) 2015 Adam Banaszkiewicz
+ * @copyright  Copyright (C) 2015 - 2016 Adam Banaszkiewicz
  * @license    GNU General Public License version 3; see license.txt
  */
 
@@ -16,6 +16,7 @@ class Account extends Entity
     protected $owner;
     protected $name;
     protected $senderName;
+    protected $savePassword;
     protected $imapHost;
     protected $imapUsername;
     protected $imapPassword;
@@ -122,6 +123,30 @@ class Account extends Entity
     public function setSenderName($senderName)
     {
         $this->senderName = $senderName;
+
+        return $this;
+    }
+
+    /**
+    * Gets the savePassword.
+    *
+    * @return mixed
+    */
+    public function getSavePassword()
+    {
+        return $this->savePassword;
+    }
+
+    /**
+    * Sets the $savePassword.
+    *
+    * @param mixed $savePassword the save password
+    *
+    * @return self
+    */
+    public function setSavePassword($savePassword)
+    {
+        $this->savePassword = $savePassword;
 
         return $this;
     }
